@@ -1,0 +1,4 @@
+username: User
+hostname: localhost
+system_directory: ./system.tar
+log_file: ./log.csv
