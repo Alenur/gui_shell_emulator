@@ -4,6 +4,7 @@ from typing import List
 from tarfile import TarFile
 from datetime import datetime
 from pathlib import Path
+import argparse
 
 
 class Object:
@@ -74,6 +75,16 @@ class Directory(Object):
                 else:
                     return None
             return obj
+        # ..dir or ../dir
+        if path.startswith(".."):
+            obj = self.parent
+            parts = list(filter(lambda x: bool(x), path[2:].split("/")))
+            for part in parts:
+                if obj.get_child(part):
+                    obj = obj.get_child(part)
+                else:
+                    return None
+            return obj
         # .dir or ./dir/file.txt
         if path.startswith("."):
             obj = self
@@ -127,3 +138,23 @@ class FileSystem(Directory):
                              datetime.fromtimestamp(member.mtime))
                     elif member.isdir():
                         Directory(current, part, datetime.fromtimestamp(member.mtime))
+
+
+# rewritten argparse._HelpAction
+class _HelpAction(argparse.Action):
+    def __init__(self,
+                 option_strings,
+                 dest,
+                 default=False,
+                 help=None):
+        super(_HelpAction, self).__init__(
+            option_strings=option_strings,
+            dest=dest,
+            const=True,
+            default=default,
+            nargs=0,
+            help=help)
+
+    def __call__(self, parser, namespace, values, option_string=None):
+        setattr(namespace, self.dest, self.const)
+        parser.print_help()
