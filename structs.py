@@ -157,4 +157,14 @@ class _HelpAction(argparse.Action):
 
     def __call__(self, parser, namespace, values, option_string=None):
         setattr(namespace, self.dest, self.const)
-        parser.print_help()
+        return parser.format_help()
+
+
+class ArgumentError(Exception):
+    def __init__(self, message):
+        super().__init__(message)
+
+
+class ArgumentParser(argparse.ArgumentParser):
+    def error(self, message):
+        raise ArgumentError(f"{self.prog}: {message}")
