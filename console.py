@@ -55,7 +55,7 @@ class Shell(cmd.Cmd):
         )
         parsers["cat"].add_argument("-l", action="store_true", help="use a long listing format")
         parsers["cat"].add_argument("--help", action=_HelpAction, help="show this help message and exit")
-        parsers["cat"].add_argument("files", type=str, nargs="*", metavar="FILE", default=[self.current_directory])
+        parsers["cat"].add_argument("files", type=str, nargs="*", metavar="FILE")
 
         parsers["ls"] = ArgumentParser(
             prog="ls",
@@ -64,7 +64,7 @@ class Shell(cmd.Cmd):
         )
         parsers["ls"].add_argument("-l", action="store_true", help="use a long listing format")
         parsers["ls"].add_argument("--help", action=_HelpAction, help="show this help message and exit")
-        parsers["ls"].add_argument("files", type=str, nargs="*", metavar="FILE", default=[self.current_directory])
+        parsers["ls"].add_argument("files", type=str, nargs="*", metavar="FILE")
 
         parsers["cd"] = ArgumentParser(
             prog="cd",
@@ -72,7 +72,7 @@ class Shell(cmd.Cmd):
             add_help=False
         )
         parsers["cd"].add_argument("--help", action=_HelpAction, help="show this help message and exit")
-        parsers["cd"].add_argument("dir", type=str, nargs="*", default=[self.current_directory])
+        parsers["cd"].add_argument("dir", type=str, nargs="*")
 
         parsers["exit"] = ArgumentParser(
             prog="exit",
@@ -152,17 +152,18 @@ class Shell(cmd.Cmd):
 
         if not args.help:
             self.log_writer.writerow([datetime.now().strftime("%Y-%m-%d %H:%M:%S"), self.username, "cat", args])
-            for path in args.files:
-                found = self.current_directory_object.search_by_coord(path)
-                if found is None:
-                    return f"cat: {path}: No such file or directory"
-                elif found.isfile():
-                    if found.extension == ".txt":
-                        return found.content.decode()
+            if args.files:
+                for path in args.files:
+                    found = self.current_directory_object.search_by_coord(path)
+                    if found is None:
+                        return f"cat: {path}: No such file or directory"
+                    elif found.isfile():
+                        if found.extension == ".txt":
+                            return found.content.decode()
+                        else:
+                            return found.content
                     else:
-                        return found.content
-                else:
-                    return f"cat: {path}: Is a directory"
+                        return f"cat: {path}: Is a directory"
         else:
             self.log_writer.writerow([datetime.now().strftime("%Y-%m-%d %H:%M:%S"), self.username, "cat", "--help"])
             return self.parsers["cat"].format_help()
@@ -176,22 +177,31 @@ class Shell(cmd.Cmd):
 
         if not args.help:
             self.log_writer.writerow([datetime.now().strftime("%Y-%m-%d %H:%M:%S"), self.username, "ls", args])
-            for path in args.files:
-                found = self.current_directory_object.search_by_coord(path)
-                if found is None:
-                    return f"ls: cannot access '{path}': No such file or directory."
-                elif found.isfile():
-                    return path
-                else:
-                    if len(args.files) > 1:
-                        return f"{path}:"
-                    if args.l:
-                        data = [[child.size, child.mtime.strftime("%b %d %H:%M:%S"), child.name]
-                                for child in found.children]
-                        return tabulate(data, tablefmt="plain")
+            if args.files:
+                for path in args.files:
+                    found = self.current_directory_object.search_by_coord(path)
+                    if found is None:
+                        return f"ls: cannot access '{path}': No such file or directory."
+                    elif found.isfile():
+                        return path
                     else:
-                        data = [child.name for child in found.children]
-                        return " ".join(data)
+                        if len(args.files) > 1:
+                            return f"{path}:"
+                        if args.l:
+                            data = [[child.size, child.mtime.strftime("%b %d %H:%M:%S"), child.name]
+                                    for child in found.children]
+                            return tabulate(data, tablefmt="plain")
+                        else:
+                            data = [child.name for child in found.children]
+                            return " ".join(data)
+            else:
+                if args.l:
+                    data = [[child.size, child.mtime.strftime("%b %d %H:%M:%S"), child.name]
+                            for child in self.current_directory_object.children]
+                    return tabulate(data, tablefmt="plain")
+                else:
+                    data = [child.name for child in self.current_directory_object.children]
+                    return " ".join(data)
         else:
             self.log_writer.writerow([datetime.now().strftime("%Y-%m-%d %H:%M:%S"), self.username, "ls", "--help"])
             return self.parsers["ls"].format_help()
@@ -208,9 +218,9 @@ class Shell(cmd.Cmd):
             if len(args.dir) == 1:
                 result = self.current_directory_object.search_by_coord(args.dir[0])
                 if result is None:
-                    return f"cd: {args.dir}: No such file or directory"
+                    return f"cd: {args.dir[0]}: No such file or directory"
                 elif result.isfile():
-                    return f"cd: {args.dir}: Not a directory"
+                    return f"cd: {args.dir[0]}: Not a directory"
                 else:
                     self.current_directory_object = result
                     self.current_directory = self.current_directory_object.abspath
