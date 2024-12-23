@@ -23,7 +23,8 @@ class Shell(cmd.Cmd):
         self.hostname = config["hostname"]
 
         self.system = FileSystem()
-        self.system.fill(tarfile.open(config["system_directory"]))
+        with tarfile.open(config["system_directory"]) as tar:
+            self.system.fill(tar)
 
         self.log_file = open(config["log_file"], "w", newline="")
         self.log_writer = csv.writer(self.log_file, delimiter=";")
@@ -80,7 +81,7 @@ class Shell(cmd.Cmd):
             add_help=False
         )
         parsers["exit"].add_argument("--help", action=_HelpAction, help="show this help message and exit")
-        parsers["exit"].add_argument("status", type=str, nargs="*", metavar="N", default=0)
+        parsers["exit"].add_argument("status", type=str, nargs="*", metavar="N", default=["0"])
 
         parsers["echo"] = ArgumentParser(
             prog="echo",
@@ -289,4 +290,4 @@ class Shell(cmd.Cmd):
 
 
 if __name__ == "__main__":
-    Shell().cmdloop()
+    print(Shell().onecmd("cal"))

@@ -1,3 +1,5 @@
+import sys
+
 from PySide6.QtWidgets import QApplication, QPlainTextEdit
 from PySide6.QtGui import QTextCursor, QPalette, QTextCharFormat, QFont, QKeyEvent, QMouseEvent, QContextMenuEvent
 from PySide6.QtCore import Qt
@@ -119,5 +121,3 @@ class Console(QPlainTextEdit):
             cursor.insertText(self.prompt + self.history[self.historyPos + 1])
         self.setTextCursor(cursor)
         self.historyPos += 1
-
-
